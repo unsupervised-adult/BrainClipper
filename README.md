@@ -7,7 +7,7 @@
 - Records audio from your microphone
 - Transcribes speech to text using Whisper
 - Refines text with Gemma LLM (Ollama)
-- Copies the final result to your clipboard
+- Copies the final result to your clipboard using CopyQ
 
 ## Usage
 
@@ -23,8 +23,12 @@
    ./run_speech.sh
    ```
 
+3. (Optional) Map to a hotkey:
+   - Go to your OS keyboard shortcuts settings (e.g., GNOME/KDE: System Settings → Keyboard → Shortcuts)
+   - Add a custom shortcut to run `./run_speech.sh` for instant speech-to-clipboard
+
 ## Requirements
 
 - Docker with GPU support
 - Audio input device
-- X11 clipboard (xclip, CopyQ)
+- X11 clipboard (CopyQ)
