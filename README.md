@@ -11,10 +11,10 @@
 
 ## Usage
 
-1. Build the Docker image:
+1. Build the Podman image:
 
    ```bash
-   docker build -t speech-to-clipboard .
+   podman build -t speech-to-clipboard .
    ```
 
 2. Run the script:
@@ -37,6 +37,38 @@
 
    - The rephrased text will be copied back to your clipboard
    - (Optional) Map this command to a hotkey for instant rephrasing
+
+## Python Environment Setup
+
+For Python libraries (like ollama), use a virtual environment:
+
+1. Create and activate a virtual environment:
+
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+2. Install required packages:
+
+   ```bash
+   pip install openai-whisper ollama
+   ```
+
+## Installation with pipx (for CLI tools)
+
+1. Install pipx:
+
+   ```bash
+   sudo apt install pipx
+   pipx ensurepath
+   ```
+
+2. Install CLI tools (if needed):
+
+   ```bash
+   pipx install openai-whisper
+   ```
 
 ## Requirements
 

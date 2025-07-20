@@ -1,7 +1,7 @@
 #!/bin/bash
 # Ensure user is in audio group
 [ "$(id -gn)" != "audio" ] && sudo usermod -aG audio $USER
-docker run --gpus all \
+podman run --gpus all \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /tmp:/tmp \
     -e DISPLAY=$DISPLAY \
