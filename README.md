@@ -9,18 +9,41 @@
 - Refines text with Gemma LLM (Ollama)
 - Copies the final result to your clipboard using CopyQ
 
+## Project Structure
+
+- `linux/` — Linux container files and scripts
+- `windows/` — Windows container files and scripts
+
 ## Usage
+
+### Linux
 
 1. Build the Podman image:
 
    ```bash
-   podman build -t speech-to-clipboard .
+   cd linux
+   podman build -t braindumper .
    ```
 
 2. Run the script:
 
    ```bash
    ./run_speech.sh
+   ```
+
+### Windows
+
+1. Build the Docker image:
+
+   ```powershell
+   cd windows
+   docker build -t braindumper .
+   ```
+
+2. Run the script:
+
+   ```powershell
+   ./run_speech.ps1
    ```
 
 3. (Optional) Map to a hotkey:

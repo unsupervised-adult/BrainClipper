@@ -8,5 +8,5 @@ podman run --gpus all \
     --device /dev/snd:/dev/snd \
     --group-add $(getent group audio | cut -d: -f3) \
     --workdir /app \
-    speech-to-clipboard
+    braindumper
 notify-send "Text copied to clipboard"
