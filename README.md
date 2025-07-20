@@ -31,6 +31,20 @@
    ./run_speech.sh
    ```
 
+3. (Optional) Map to a hotkey:
+   - Go to your OS keyboard shortcuts settings (e.g., GNOME/KDE: System Settings → Keyboard → Shortcuts)
+   - Add a custom shortcut to run `./run_speech.sh` for instant speech-to-clipboard
+
+4. Rephrase highlighted/clipboard text:
+   - Copy any text you want to rephrase to your clipboard
+   - Run the following command:
+
+     ```bash
+     python3 refine_clipboard.py
+     ```
+   - The rephrased text will be copied back to your clipboard
+   - (Optional) Map this command to a hotkey for instant rephrasing
+
 ### Windows
 
 1. Build the Docker image:
@@ -47,17 +61,16 @@
    ```
 
 3. (Optional) Map to a hotkey:
-   - Go to your OS keyboard shortcuts settings (e.g., GNOME/KDE: System Settings → Keyboard → Shortcuts)
-   - Add a custom shortcut to run `./run_speech.sh` for instant speech-to-clipboard
+   - Go to your OS keyboard shortcuts settings (Windows: Settings → Keyboard → Shortcuts)
+   - Add a custom shortcut to run `run_speech.ps1` for instant speech-to-clipboard
 
 4. Rephrase highlighted/clipboard text:
    - Copy any text you want to rephrase to your clipboard
    - Run the following command:
 
-     ```bash
-     python3 refine_clipboard.py
+     ```powershell
+     python refine_clipboard.py
      ```
-
    - The rephrased text will be copied back to your clipboard
    - (Optional) Map this command to a hotkey for instant rephrasing
 
