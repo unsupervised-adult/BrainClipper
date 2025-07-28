@@ -286,3 +286,4 @@ Use the provided `record_and_send.py` script to record audio with a hotkey (F9 b
    - First press starts recording, second press stops and sends.
 
 ---
+
