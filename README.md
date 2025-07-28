@@ -69,6 +69,56 @@
    - The rephrased text will be copied back to your clipboard
    - (Optional) Map this command to a hotkey for instant rephrasing
 
+## Starting the Container
+
+To run the container so it continuously waits for audio files:
+
+```bash
+./run_speech.sh
+```
+
+Or manually:
+
+```bash
+podman run --gpus all \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v /tmp:/tmp \
+    -e DISPLAY=$DISPLAY \
+    --device /dev/snd:/dev/snd \
+    --group-add $(getent group audio | cut -d: -f3) \
+    --workdir /app \
+    braindumper
+```
+
+## Running as a Service (Optional)
+
+You can run the container as a background service using systemd:
+
+1. Create a systemd unit file (e.g., `/etc/systemd/system/braindumper.service`):
+
+```ini
+[Unit]
+Description=BrainClipper Speech-to-Clipboard Container
+After=network.target
+
+[Service]
+ExecStart=/home/$USER/Documents/Project-Code/whisper-braindumper/linux/run_speech.sh
+Restart=always
+User=$USER
+
+[Install]
+WantedBy=default.target
+```
+
+2. Reload systemd and enable the service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now braindumper.service
+```
+
+This will keep the container running in the background, ready to process audio files as they appear.
+
 ## GPU Passthrough Instructions
 
 ### Linux (Podman/Docker)
