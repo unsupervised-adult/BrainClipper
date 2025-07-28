@@ -125,5 +125,3 @@
 4. Audio is transcribed, refined, and copied to clipboard (in memory).
 
 ---
-
-If any section is unclear or missing details, please provide feedback so instructions can be improved for future users and AI agents.
