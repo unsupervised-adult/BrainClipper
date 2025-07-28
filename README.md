@@ -259,6 +259,7 @@ If you encounter any errors during installation or the hook file is still missin
 Use the provided `record_and_send.py` script to record audio with a hotkey (F9 by default):
 
 1. **Install dependencies:**
+
    ```bash
    pipx install sounddevice soundfile keyboard numpy
    # or
@@ -266,30 +267,22 @@ Use the provided `record_and_send.py` script to record audio with a hotkey (F9 b
    ```
 
 2. **Run the script:**
+
    ```bash
    python3 record_and_send.py
    ```
+
    - Press F9 to start recording.
    - Press F9 again to stop and send audio for processing.
    - The audio is saved as `/tmp/input.wav` and the container will process it automatically.
 
 3. **Map to a hotkey:**
    - In KDE/GNOME, set a global shortcut to run:
+
      ```bash
      python3 /path/to/record_and_send.py
      ```
+
    - First press starts recording, second press stops and sends.
-
----
-
-## Container Script Location
-
-The main workflow script (`process_audio.sh`) is located at `/app/process_audio.sh` inside the container. For best practice, you can symlink or copy it to `/usr/local/sbin/` in your Dockerfile or container setup for easier access:
-
-```dockerfile
-RUN ln -s /app/process_audio.sh /usr/local/sbin/process_audio.sh
-```
-
-This allows you to run `process_audio.sh` from anywhere in the container shell.
 
 ---

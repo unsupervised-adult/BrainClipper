@@ -32,5 +32,9 @@ COPY app/transcribe.py /app/transcribe.py
 COPY app/refine.py /app/refine.py
 COPY app/process_audio.sh /app/process_audio.sh
 RUN chmod +x /app/process_audio.sh
+RUN ln -s /app/process_audio.sh /usr/local/sbin/process_audio.sh
+RUN ln -s /app/transcribe.py /usr/local/sbin/transcribe.py
+RUN ln -s /app/refine.py /usr/local/sbin/refine.py
+RUN ln -s /app/entrypoint.sh /usr/local/sbin/entrypoint.sh
 ENTRYPOINT ["/app/entrypoint.sh"]
 
