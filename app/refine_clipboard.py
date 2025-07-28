@@ -10,7 +10,7 @@ if not clipboard_text:
 
 client = Client()
 prompt = f"Rephrase the following into a concise, professional message:\n{clipboard_text}"
-response = client.generate(model="gemma:2b", prompt=prompt)
+response = client.generate(model="granite:3b", prompt=prompt)
 polished_text = response["response"]
 
 # Copy rephrased text back to clipboard using CopyQ
