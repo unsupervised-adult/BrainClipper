@@ -210,80 +210,84 @@ If you encounter any errors during installation or the hook file is still missin
    pipx install ollama
    ```
 
+## BrainClipper Workflow Overview
+
+BrainClipper is a containerized speech-to-clipboard automation tool for Linux. It uses Whisper for transcription and an LLM (via Ollama) for text refinement. The workflow is:
+
+1. **Record audio** on the host (using `record_and_send.py` or a mapped hotkey).
+2. **Audio is saved** as `/tmp/input.wav`.
+3. **Start the container** using `./run_speech.sh` (handles GPU, clipboard, and audio device mounts).
+4. **Container processes audio**:
+    - `entrypoint.sh` starts the Ollama server, then runs `process_audio.sh`.
+    - `process_audio.sh` transcribes audio with Whisper, refines with LLM, and copies the result to the clipboard using CopyQ.
+5. **Paste the result** anywhere on your host.
+
+## Key Files
+
+- `app/entrypoint.sh`: Starts Ollama server, then runs the workflow.
+- `app/process_audio.sh`: Handles audio file, runs transcription and refinement, manages clipboard.
+- `app/transcribe.py`: Transcribes `/input/audio.wav` to `/tmp/transcript.txt`.
+- `app/refine.py`: Refines transcript with LLM, copies result to clipboard.
+- `app/refine_clipboard.py`: Rephrases clipboard text using LLM.
+- `linux/Dockerfile`: Installs dependencies, sets up entrypoint.
+- `linux/run_speech.sh`: Host script to run container with correct mounts/devices.
+
+## Hotkey Integration
+
+- Map `record_and_send.py` to a global shortcut in KDE/GNOME for instant recording.
+- The script toggles recording: first press starts, second press stops and sends audio to the container.
+
+## Clipboard Rephrase
+
+- Run `python3 app/refine_clipboard.py` to rephrase clipboard text using the LLM.
+
 ## Example End-to-End Flow
 
-1. Start the container using `run_speech.sh` (container runs independently and waits for audio files).
-2. On the host, record audio and save as `/tmp/input.wav` (e.g., using a Python script or `arecord`).
-
-   ```bash
-   arecord -f cd -t wav -d 5 -r 16000 /tmp/input.wav
-   ```
-
-3. The container detects `/input/audio.wav` (mounted from `/tmp/input.wav`), transcribes, refines, and copies the result to your clipboard.
-4. Paste (Ctrl+V) anywhere to see the output.
-5. Repeat: Each new `/tmp/input.wav` will be processed automatically.
+1. User triggers hotkey or runs `record_and_send.py`.
+2. Host records audio, saves as `/tmp/input.wav`.
+3. Container starts, runs `entrypoint.sh` → `process_audio.sh`.
+4. Audio is transcribed, refined, and copied to clipboard.
 
 ---
 
-### How It Works (Container Side)
 
-- The container runs a loop in `process_audio.sh`:
-  - Waits for `/input/audio.wav` to appear.
-  - Runs `transcribe.py` to create `/tmp/transcript.txt`.
-  - Runs `refine.py` to create `/tmp/refined.txt`.
-  - Copies the result to clipboard using `xclip`.
-  - Removes the processed audio file and waits for the next.
-- Debug mode can be enabled by setting `DEBUG=1` or passing `--debug` to `process_audio.sh` for detailed logs.
+## Project Overview
 
----
+- **BrainClipper** is a containerized speech-to-clipboard workflow for Linux and Windows, using Whisper for transcription and an LLM (Gemma or Granite via Ollama) for text refinement.
+- The main workflow: record audio → transcribe with Whisper → refine with LLM → copy result to clipboard (CopyQ).
+- Designed for fast, accurate, and professional speech-to-clipboard automation.
 
-## Typical Workflow: Hotkey Recording and Processing
+## Architecture & Data Flow
 
-1. **Press your assigned hotkey** to start recording audio (using your host-side script, e.g., `record_and_send.py`).
-2. **Speak your message** into the microphone.
-3. **Press the hotkey again** to stop recording and save the audio as `/tmp/input.wav`.
-4. The container automatically detects `/tmp/input.wav`, transcribes and refines it, and copies the result to your clipboard.
-5. **Paste (Ctrl+V)** anywhere to use the processed text.
-6. Repeat the process for each new message.
+- **Linux:**
+  - Container built with Podman (or Docker), GPU-enabled (`nvidia/cuda` base image).
+  - Entry point: `app/entrypoint.sh` starts Ollama server, then runs `process_audio.sh`.
+  - Audio is recorded on host (e.g., via `record_and_send.py` or hotkey script), then passed to container as `/input/audio.wav`.
+  - `process_audio.sh` runs `transcribe.py` (Whisper) and `refine.py` (LLM), then copies output to clipboard.
 
-### Hotkey Setup Example (KDE/GNOME)
+## Key Files & Patterns
 
-- Map your host-side recording script (e.g., `record_and_send.py` or `record_and_send.sh`) to a global shortcut in your system settings.
-- The script should:
-  - Start recording on first press
-  - Stop recording and save `/tmp/input.wav` on second press
-  - Optionally, notify you when processing is complete
+- `app/entrypoint.sh`: Starts Ollama server, then runs workflow script.
+- `app/process_audio.sh`: Handles audio file, runs transcription and refinement, manages clipboard.
+- `app/transcribe.py`: Uses Whisper to transcribe `/input/audio.wav` to `/tmp/transcript.txt`.
+- `app/refine.py`: Uses Ollama LLM to rephrase transcript, copies result to clipboard.
+- `app/refine_clipboard.py`: Rephrases clipboard text using LLM.
+- `linux/Dockerfile`: Installs all dependencies, sets up entrypoint.
+- `linux/run_speech.sh`: Host script to run container with correct mounts/devices.
 
-## Hotkey-Based Audio Recording (Python)
+## Developer Workflows
 
-Use the provided `record_and_send.py` script to record audio with a hotkey (F9 by default):
+- **Build:**
+  - Linux: `podman build -t braindumper .` (from `linux/`)
+  - Windows: `docker build -t braindumper .` (from `windows/`)
+- **Run:**
+  - Linux: `./run_speech.sh` (handles audio, clipboard, GPU, X11)
+  - Windows: `./run_speech.ps1`
+- **Hotkey Integration:**
+  - Map `run_speech.sh` or host-side Python script to a global shortcut for instant recording/processing.
+- **Clipboard Rephrase:**
+  - Run `python3 app/refine_clipboard.py` to rephrase clipboard text.
 
-1. **Install dependencies:**
+## Conventions & Patterns
 
-   ```bash
-   pipx install sounddevice soundfile keyboard numpy
-   # or
-   pip install sounddevice soundfile keyboard numpy
-   ```
-
-2. **Run the script:**
-
-   ```bash
-   python3 record_and_send.py
-   ```
-
-   - Press F9 to start recording.
-   - Press F9 again to stop and send audio for processing.
-   - The audio is saved as `/tmp/input.wav` and the container will process it automatically.
-
-3. **Map to a hotkey:**
-   - In KDE/GNOME, set a global shortcut to run:
-
-     ```bash
-     python3 /path/to/record_and_send.py
-     ```
-
-   - First press starts recording, second press stops and sends.
-
----
-
+- All audio processing and LLM inference run inside the container for reproducibility and isolation.

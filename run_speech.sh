@@ -1,6 +1,7 @@
 #!/bin/bash
 # Start the container for LLM/audio processing only (no recording)
-podman run --gpus all \
+docker run --rm \
+    --gpus all \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /tmp:/tmp \
     -e DISPLAY=$DISPLAY \
