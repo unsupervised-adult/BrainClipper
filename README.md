@@ -119,9 +119,25 @@
 
 ## Example End-to-End Flow
 
-1. User triggers hotkey or runs `run_speech.sh`.
-2. Host records audio, saves as `/tmp/input.wav`.
-3. Container starts, runs `entrypoint.sh` → `process_audio.sh`.
-4. Audio is transcribed, refined, and copied to clipboard (in memory).
+1. Start the container using `run_speech.sh` (container runs independently and waits for audio files).
+2. On the host, record audio and save as `/tmp/input.wav` (e.g., using a Python script or `arecord`).
+   ```bash
+   arecord -f cd -t wav -d 5 -r 16000 /tmp/input.wav
+   ```
+3. The container detects `/input/audio.wav` (mounted from `/tmp/input.wav`), transcribes, refines, and copies the result to your clipboard.
+4. Paste (Ctrl+V) anywhere to see the output.
+5. Repeat: Each new `/tmp/input.wav` will be processed automatically.
+
+---
+
+### How It Works (Container Side)
+
+- The container runs a loop in `process_audio.sh`:
+  - Waits for `/input/audio.wav` to appear.
+  - Runs `transcribe.py` to create `/tmp/transcript.txt`.
+  - Runs `refine.py` to create `/tmp/refined.txt`.
+  - Copies the result to clipboard using `xclip`.
+  - Removes the processed audio file and waits for the next.
+- Debug mode can be enabled by setting `DEBUG=1` or passing `--debug` to `process_audio.sh` for detailed logs.
 
 ---

@@ -9,4 +9,4 @@ podman run --gpus all \
     --group-add $(getent group audio | cut -d: -f3) \
     --workdir /app \
     braindumper
-notify-send "Text copied to clipboard"
+# Container now runs independently and waits for audio files to process
