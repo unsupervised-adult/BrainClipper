@@ -257,6 +257,91 @@ If you need to manually pull the Ollama model inside the container:
 
 This ensures the LLM model is available for processing. If the model is already present, the pull will be fast and will not re-download unless needed.
 
+## Ollama Model Persistence & Symlinking
+
+Ollama stores downloaded LLM models in a `.ollama` directory. To avoid re-downloading models every time you start a new container, you should persist this directory and ensure the container always uses the correct cache.
+
+### 1. Find Your Ollama Model Directory
+
+On most systems, Ollama stores models in your home directory:
+
+```bash
+ls ~/.ollama
+```
+
+Sometimes, models may also be found in `/usr/share/ollama/.ollama`. To check all locations:
+
+```bash
+find / -type d -name ".ollama" 2>/dev/null
+```
+
+### 2. Symlink System Directory to User Directory (if needed)
+
+If you find models in `/usr/share/ollama/.ollama` and want to use your user cache (`/home/<user>/.ollama`), copy the contents and create a symlink:
+
+```bash
+sudo cp -r /usr/share/ollama/.ollama/* ~/.ollama/
+sudo rm -rf /usr/share/ollama/.ollama
+sudo ln -s ~/.ollama /usr/share/ollama/.ollama
+sudo chown -R $USER:$USER ~/.ollama
+```
+
+This ensures all models are stored in your user directory and the system path points to it.
+
+### 3. Persist Models in Docker
+
+Mount your `.ollama` directory when running the container:
+
+```bash
+docker run --rm \
+  --gpus all \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v /tmp:/tmp \
+  -v ~/.ollama:/root/.ollama \
+  -e DISPLAY=$DISPLAY \
+  --device /dev/snd:/dev/snd \
+  --group-add $(getent group audio | cut -d: -f3) \
+  --workdir /app \
+  braindumper
+```
+
+This ensures models are cached and available for all future runs.
+
 ---
 
-> **Note:** Podman is not supported for GPU workflows in BrainClipper. Use Docker for all GPU-accelerated container operations.
+## Clipboard Integration (X11 Forwarding)
+
+For clipboard operations (using `xclip`), your container needs access to your host’s X11 server:
+
+1. **Allow X11 connections from Docker:**
+
+   ```bash
+   xhost +local:docker
+   ```
+
+2. **Run the container with X11 socket mounted:**
+
+   ```bash
+   -v /tmp/.X11-unix:/tmp/.X11-unix \
+   -e DISPLAY=$DISPLAY
+   ```
+
+3. **SSH Forwarding (if running remotely):**
+
+   - Use `ssh -X` or `ssh -Y` to forward X11 when connecting to your host.
+
+---
+
+## Quick Reference: End-to-End Workflow
+
+1. **Record audio** on host (`record_and_send.py` or hotkey).
+2. **Audio saved** as `/tmp/input.wav`.
+3. **Start container** with GPU, audio, X11, and Ollama model mounts.
+4. **Container processes audio**:
+    - `entrypoint.sh` starts Ollama server, runs `process_audio.sh`.
+    - `process_audio.sh` transcribes, refines, and copies result to clipboard using `xclip`.
+5. **Paste result** anywhere on host.
+
+---
+
+> **Tip:** Always mount your `.ollama` directory and X11 socket for best performance and clipboard reliability.
