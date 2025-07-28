@@ -1,97 +1,107 @@
 # BrainClipper
 
-**BrainClipper** converts spoken audio into concise, professional clipboard text using Whisper for transcription and Gemma LLM for refinement. Designed for fast, accurate speech-to-clipboard workflows in Linux environments.
+**BrainClipper** converts spoken audio into concise, professional clipboard text using Whisper for transcription and an LLM (Gemma or Granite via Ollama) for refinement. Designed for fast, accurate speech-to-clipboard workflows in Linux environments.
 
 ## Features
 
-- Records audio from your microphone
-- Transcribes speech to text using Whisper
-- Refines text with Gemma LLM (Ollama)
-- Copies the final result to your clipboard using CopyQ
+- Records audio from your microphone (host-side)
+- Transcribes speech to text using Whisper (container, GPU-accelerated)
+- Refines text with Gemma/Granite LLM via Ollama (container, GPU-accelerated)
+- Copies the final result to your clipboard using CopyQ (container, X11 clipboard)
+- Hotkey integration for instant recording and processing
 
 ## Project Structure
 
 - `linux/` — Linux container files and scripts
-- `windows/` — Windows container files and scripts
+- `app/` — Core processing scripts (transcribe, refine, entrypoint, etc.)
 
 ## Usage
 
 ### Linux
 
-1. Build the Podman image:
+1. **Build the Podman image (with GPU support):**
 
    ```bash
    cd linux
    podman build -t braindumper .
    ```
 
-2. Run the script:
+   - For Docker, use:
+
+     ```bash
+     docker build -t braindumper .
+     ```
+
+2. **Run the container with GPU and audio passthrough:**
 
    ```bash
    ./run_speech.sh
    ```
 
-3. (Optional) Map to a hotkey:
+   - This script mounts your audio device (`/dev/snd`), X11 socket, and clipboard, and passes the recorded audio file to the container.
+   - Ensure you have permissions for `/dev/snd` and X11 access (e.g., `xhost +local:`).
+   - For manual Podman/Docker run:
+
+     ```bash
+     podman run --rm \
+       --device /dev/snd \
+       -e DISPLAY=$DISPLAY \
+       -v /tmp/.X11-unix:/tmp/.X11-unix \
+       -v /path/to/input.wav:/input/audio.wav \
+       --gpus all \
+       braindumper
+     ```
+
+     - Replace `/path/to/input.wav` with your recorded audio file.
+
+3. **Map to a hotkey:**
    - Go to your OS keyboard shortcuts settings (e.g., GNOME/KDE: System Settings → Keyboard → Shortcuts)
    - Add a custom shortcut to run `./run_speech.sh` for instant speech-to-clipboard
 
-4. Rephrase highlighted/clipboard text:
+4. **Rephrase highlighted/clipboard text:**
    - Copy any text you want to rephrase to your clipboard
    - Run the following command:
 
      ```bash
-     python3 refine_clipboard.py
+     python3 app/refine_clipboard.py
      ```
+
    - The rephrased text will be copied back to your clipboard
    - (Optional) Map this command to a hotkey for instant rephrasing
 
-### Windows
+## GPU Passthrough Instructions
 
-1. Build the Docker image:
+### Linux (Podman/Docker)
 
-   ```powershell
-   cd windows
-   docker build -t braindumper .
-   ```
+- Ensure you have the NVIDIA Container Toolkit installed:
 
-2. Run the script:
+  ```bash
+  sudo apt install nvidia-container-toolkit
+  sudo systemctl restart docker
+  ```
 
-   ```powershell
-   ./run_speech.ps1
-   ```
+- Run containers with `--gpus all` (Docker) or Podman equivalent.
+- Verify GPU access inside the container:
 
-3. (Optional) Map to a hotkey:
-   - Go to your OS keyboard shortcuts settings (Windows: Settings → Keyboard → Shortcuts)
-   - Add a custom shortcut to run `run_speech.ps1` for instant speech-to-clipboard
+  ```bash
+  podman run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi
+  ```
 
-4. Rephrase highlighted/clipboard text:
-   - Copy any text you want to rephrase to your clipboard
-   - Run the following command:
+- For X11 clipboard access, allow local connections:
 
-     ```powershell
-     python refine_clipboard.py
-     ```
-   - The rephrased text will be copied back to your clipboard
-   - (Optional) Map this command to a hotkey for instant rephrasing
+  ```bash
+  xhost +local:
+  ```
 
-## Python Environment Setup
+## Requirements
 
-For Python libraries (like ollama), use a virtual environment:
+- Podman or Docker with GPU support
+- Audio input device (`/dev/snd` on Linux)
+- X11 clipboard (CopyQ)
+- Python 3.8+
+- NVIDIA GPU and drivers (for GPU acceleration)
 
-1. Create and activate a virtual environment:
-
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-2. Install required packages:
-
-   ```bash
-   pip install openai-whisper ollama
-   ```
-
-## Installation with pipx (for CLI tools)
+## Installation with pipx (Recommended)
 
 1. Install pipx:
 
@@ -100,14 +110,20 @@ For Python libraries (like ollama), use a virtual environment:
    pipx ensurepath
    ```
 
-2. Install CLI tools (if needed):
+2. Install CLI tools:
 
    ```bash
    pipx install openai-whisper
+   pipx install ollama
    ```
 
-## Requirements
+## Example End-to-End Flow
 
-- Docker with GPU support
-- Audio input device
-- X11 clipboard (CopyQ)
+1. User triggers hotkey or runs `run_speech.sh`.
+2. Host records audio, saves as `/tmp/input.wav`.
+3. Container starts, runs `entrypoint.sh` → `process_audio.sh`.
+4. Audio is transcribed, refined, and copied to clipboard (in memory).
+
+---
+
+If any section is unclear or missing details, please provide feedback so instructions can be improved for future users and AI agents.
