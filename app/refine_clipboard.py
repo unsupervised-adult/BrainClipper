@@ -1,4 +1,4 @@
-from ollama import Client
+from ollama import Client # type: ignore
 import os
 import time
 

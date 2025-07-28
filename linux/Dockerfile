@@ -24,16 +24,13 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir openai-whisper torch torchaudio ollama sounddevice numpy soundfile keyboard
-
 RUN curl -fsSL https://ollama.com/install.sh | sh
-RUN ollama pull granite:3b
 
 COPY app/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
-COPY app/record_hotkey.py /app/record_hotkey.py
 COPY app/transcribe.py /app/transcribe.py
 COPY app/refine.py /app/refine.py
 COPY app/process_audio.sh /app/process_audio.sh
 RUN chmod +x /app/process_audio.sh
-ENTRYPOINT ["/app/process_audio.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
 
