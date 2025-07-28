@@ -10,7 +10,7 @@ else
 fi
 
 # Example usage: ./process_audio.sh [--debug] <audio_file>
-AUDIO_FILE="/input/audio.wav"
+AUDIO_FILE="/tmp/input.wav"
 
 while true; do
     if [ -f "$AUDIO_FILE" ]; then
@@ -55,4 +55,5 @@ while true; do
     else
         sleep 1
     fi
+
 done

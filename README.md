@@ -170,17 +170,20 @@ This will keep the container running in the background, ready to process audio f
 ## Python Environment Setup (Recommended)
 
 1. Create and activate a virtual environment:
+
    ```bash
    python3 -m venv ~/.venvs/brainclipper
    source ~/.venvs/brainclipper/bin/activate
    ```
 
 2. Install required packages:
+
    ```bash
    pip install sounddevice soundfile numpy psutil
    ```
 
 3. Run the recording script:
+
    ```bash
    python3 /home/ficus/Documents/Project-Code/whisper-braindumper/record_and_send.py
    ```
@@ -230,6 +233,7 @@ BrainClipper is a containerized speech-to-clipboard automation tool for Linux. I
 If you need to manually pull the Ollama model inside the container:
 
 1. Start the container as usual:
+
    ```bash
    ./run_speech.sh
    # or
@@ -237,12 +241,14 @@ If you need to manually pull the Ollama model inside the container:
    ```
 
 2. Enter the running container:
+
    ```bash
    docker ps
    docker exec -it <container_id_or_name> /bin/bash
    ```
 
 3. Inside the container, pull the model:
+
    ```bash
    ollama pull granite3-moe:3b
    ollama list
