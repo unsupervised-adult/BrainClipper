@@ -110,7 +110,7 @@ User=$USER
 WantedBy=default.target
 ```
 
-2. Reload systemd and enable the service:
+1. Reload systemd and enable the service:
 
 ```bash
 sudo systemctl daemon-reload
@@ -143,6 +143,49 @@ This will keep the container running in the background, ready to process audio f
   xhost +local:
   ```
 
+## Troubleshooting Podman GPU Access
+
+If you get an error like:
+
+```bash
+Error: OCI runtime error: crun: error executing hook `/usr/bin/nvidia-container-toolkit` (exit code: 2)
+```
+
+Follow these steps to fix:
+
+1. **Install NVIDIA Container Toolkit:**
+
+   ```bash
+   sudo apt update
+   sudo apt install nvidia-container-toolkit
+   ```
+
+2. **Check for OCI hook config:**
+   After installation, you should see a file like `/usr/share/containers/oci/hooks.d/nvidia-container-toolkit.json`.
+
+3. **Copy the hook config if needed:**
+
+   ```bash
+   sudo cp /usr/share/containers/oci/hooks.d/nvidia-container-toolkit.json /etc/containers/oci/hooks.d/
+   ```
+
+4. **Restart Podman and reboot:**
+
+   ```bash
+   sudo systemctl restart podman
+   sudo reboot
+   ```
+
+5. **Test GPU access in a container:**
+
+   ```bash
+   podman run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi
+   ```
+
+   If you see your GPU info, Podman is set up correctly.
+
+If you encounter any errors during installation or the hook file is still missing, check your Linux distribution and version for more targeted help.
+
 ## Requirements
 
 - Podman or Docker with GPU support
@@ -171,9 +214,11 @@ This will keep the container running in the background, ready to process audio f
 
 1. Start the container using `run_speech.sh` (container runs independently and waits for audio files).
 2. On the host, record audio and save as `/tmp/input.wav` (e.g., using a Python script or `arecord`).
+
    ```bash
    arecord -f cd -t wav -d 5 -r 16000 /tmp/input.wav
    ```
+
 3. The container detects `/input/audio.wav` (mounted from `/tmp/input.wav`), transcribes, refines, and copies the result to your clipboard.
 4. Paste (Ctrl+V) anywhere to see the output.
 5. Repeat: Each new `/tmp/input.wav` will be processed automatically.
@@ -191,3 +236,20 @@ This will keep the container running in the background, ready to process audio f
 - Debug mode can be enabled by setting `DEBUG=1` or passing `--debug` to `process_audio.sh` for detailed logs.
 
 ---
+
+## Typical Workflow: Hotkey Recording and Processing
+
+1. **Press your assigned hotkey** to start recording audio (using your host-side script, e.g., `record_and_send.py`).
+2. **Speak your message** into the microphone.
+3. **Press the hotkey again** to stop recording and save the audio as `/tmp/input.wav`.
+4. The container automatically detects `/tmp/input.wav`, transcribes and refines it, and copies the result to your clipboard.
+5. **Paste (Ctrl+V)** anywhere to use the processed text.
+6. Repeat the process for each new message.
+
+### Hotkey Setup Example (KDE/GNOME)
+
+- Map your host-side recording script (e.g., `record_and_send.py` or `record_and_send.sh`) to a global shortcut in your system settings.
+- The script should:
+  - Start recording on first press
+  - Stop recording and save `/tmp/input.wav` on second press
+  - Optionally, notify you when processing is complete
