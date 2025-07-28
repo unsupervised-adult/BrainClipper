@@ -281,3 +281,15 @@ Use the provided `record_and_send.py` script to record audio with a hotkey (F9 b
    - First press starts recording, second press stops and sends.
 
 ---
+
+## Container Script Location
+
+The main workflow script (`process_audio.sh`) is located at `/app/process_audio.sh` inside the container. For best practice, you can symlink or copy it to `/usr/local/sbin/` in your Dockerfile or container setup for easier access:
+
+```dockerfile
+RUN ln -s /app/process_audio.sh /usr/local/sbin/process_audio.sh
+```
+
+This allows you to run `process_audio.sh` from anywhere in the container shell.
+
+---
