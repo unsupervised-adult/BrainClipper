@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libxtst6 \
     libxss1 \
+    copyq \
     && rm -rf /var/lib/apt/lists/* \
     && which arecord || (echo "ERROR: arecord not found" && exit 1) \
     && arecord --version \
