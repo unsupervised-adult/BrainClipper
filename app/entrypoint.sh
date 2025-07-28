@@ -1,12 +1,13 @@
 #!/bin/bash
+# Entrypoint for BrainClipper container
+# Starts Ollama server, then runs the audio/text workflow
 
-# Start Ollama server in the background
 ollama serve &
-
-# Wait for Ollama to warm up
+OLLAMA_PID=$!
+# Wait for Ollama to start
 sleep 5
 
-echo "Ollama server started. Running audio workflow..."
+# Start the main workflow loop
+/app/process_audio.sh
 
-# Run your audio processing workflow
-/app/process_audio.sh "$@"
+wait $OLLAMA_PID

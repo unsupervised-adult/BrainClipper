@@ -253,3 +253,31 @@ If you encounter any errors during installation or the hook file is still missin
   - Start recording on first press
   - Stop recording and save `/tmp/input.wav` on second press
   - Optionally, notify you when processing is complete
+
+## Hotkey-Based Audio Recording (Python)
+
+Use the provided `record_and_send.py` script to record audio with a hotkey (F9 by default):
+
+1. **Install dependencies:**
+   ```bash
+   pipx install sounddevice soundfile keyboard numpy
+   # or
+   pip install sounddevice soundfile keyboard numpy
+   ```
+
+2. **Run the script:**
+   ```bash
+   python3 record_and_send.py
+   ```
+   - Press F9 to start recording.
+   - Press F9 again to stop and send audio for processing.
+   - The audio is saved as `/tmp/input.wav` and the container will process it automatically.
+
+3. **Map to a hotkey:**
+   - In KDE/GNOME, set a global shortcut to run:
+     ```bash
+     python3 /path/to/record_and_send.py
+     ```
+   - First press starts recording, second press stops and sends.
+
+---
