@@ -1,7 +1,8 @@
 import whisper # type: ignore
 from ollama import Client # type: ignore
 
-model = whisper.load_model("small.en", device="cuda")
+# Use a model that fits in 3.6GB VRAM
+model = whisper.load_model("small", device="cuda")
 result = model.transcribe("/tmp/input.wav")
 with open("/tmp/transcript.txt", "w") as f:
     f.write(result["text"])

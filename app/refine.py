@@ -6,7 +6,7 @@ with open("/tmp/transcript.txt", "r") as f:
     transcript = f.read()
 client = Client()
 prompt = f"Rephrase the following into a concise, professional message:\n{transcript}"
-response = client.generate(model="gemma:2b", prompt=prompt)
+response = client.generate(model="granite3-moe:3b", prompt=prompt)
 polished_text = response["response"]
 
 # Copy to clipboard with CopyQ

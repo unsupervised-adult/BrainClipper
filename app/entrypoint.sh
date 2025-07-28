@@ -1,10 +1,10 @@
 #!/bin/bash
 # Entrypoint for BrainClipper container
-# Starts Ollama server, then runs the audio/text workflow
+# Pulls the correct model, starts Ollama server, then runs the audio/text workflow
 
+ollama pull granite3-moe:3b
 ollama serve &
 OLLAMA_PID=$!
-# Wait for Ollama to start
 sleep 5
 
 # Start the main workflow loop
