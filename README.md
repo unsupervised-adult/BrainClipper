@@ -112,7 +112,7 @@ User=$USER
 WantedBy=default.target
 ```
 
-2. Reload systemd and enable the service:
+1. Reload systemd and enable the service:
 
 ```bash
 sudo systemctl daemon-reload

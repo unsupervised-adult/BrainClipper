@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y \
     libnss3 \
     libx11-xcb1 \
     ffmpeg \
+    nano \
+    vim \
+    vi \
     libxtst6 \
     xclip \
     libxss1 \
