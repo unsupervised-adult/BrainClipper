@@ -1,192 +1,198 @@
-# BrainClipper
+# BrainClipper: Speech-to-Clipboard Workflow
 
-**BrainClipper** converts spoken audio into concise, professional clipboard text using Whisper for transcription and an LLM (Gemma or Granite via Ollama) for refinement. Designed for fast, accurate speech-to-clipboard workflows in Linux environments.
+BrainClipper is a containerized, GPU-accelerated speech-to-clipboard workflow for Linux and Windows. It uses Whisper for transcription and an LLM (Gemma, Granite, or other Ollama models) for text refinement, with seamless clipboard integration via xclip.
 
 ## Features
 
-- Records audio from your microphone (host-side)
-- Transcribes speech to text using Whisper (container, GPU-accelerated)
-- Refines text with Gemma/Granite LLM via Ollama (container, GPU-accelerated)
-- Copies the final result to your clipboard using CopyQ (container, X11 clipboard)
-- Hotkey integration for instant recording and processing
+- **End-to-end speech-to-clipboard automation**: Record audio, transcribe with Whisper, refine with LLM, and copy to clipboard in one step.
+- **Containerized for reproducibility**: All processing runs inside a Docker container.
+- **GPU acceleration**: Uses CUDA for fast inference.
+- **Hot-swappable LLM models**: Change the LLM model on the fly without rebuilding or restarting the container.
+- **Persistent Ollama model cache**: Models are cached and can be symlinked for efficiency.
+- **Clipboard integration**: Uses xclip for X11 clipboard access (Linux).
 
-## Project Structure
+## Architecture & Data Flow
 
-- `linux/` — Linux container files and scripts
-- `app/` — Core processing scripts (transcribe, refine, entrypoint, etc.)
+1. **Host records audio** (e.g., via `arecord` or a hotkey script), saves as `/tmp/input.wav`.
+2. **Container starts** via `run_speech.sh`, with audio and model cache mounted.
+3. **Entrypoint** (`entrypoint.sh`) pulls and serves the LLM model specified by `MODEL_NAME`.
+4. **Workflow** (`process_audio.sh`):
+    - Transcribes audio with Whisper (`transcribe.py`)
+    - Refines text with LLM (`refine.py`)
+    - Copies result to clipboard with xclip
 
-## Usage
+## Quickstart (Linux)
 
-### Linux (Docker Only)
+### Build the Container
 
-1. **Build the Docker image (with GPU support):**
-
-   ```bash
-   docker build -f linux/Dockerfile -t braindumper .
-   ```
-
-2. **Run the container with GPU and audio passthrough:**
-
-   ```bash
-   ./run_speech.sh
-   ```
-
-   - This script mounts your audio device (`/dev/snd`), X11 socket, and clipboard, and passes the recorded audio file to the container.
-   - Ensure you have permissions for `/dev/snd` and X11 access (e.g., `xhost +local:`).
-   - For manual Docker run:
-
-     ```bash
-     docker run --rm \
-       --gpus all \
-       -v /tmp/.X11-unix:/tmp/.X11-unix \
-       -v /tmp:/tmp \
-       -e DISPLAY=$DISPLAY \
-       --device /dev/snd:/dev/snd \
-       --group-add $(getent group audio | cut -d: -f3) \
-       --workdir /app \
-       braindumper
-     ```
-
-3. **Map to a hotkey:**
-   - Go to your OS keyboard shortcuts settings (e.g., GNOME/KDE: System Settings → Keyboard → Shortcuts)
-   - Add a custom shortcut to run your host-side Python script (`record_and_send.py`) for instant speech-to-clipboard
-
-4. **Rephrase highlighted/clipboard text:**
-   - Copy any text you want to rephrase to your clipboard
-   - Run the following command:
-
-     ```bash
-     python3 app/refine_clipboard.py
-     ```
-
-   - The rephrased text will be copied back to your clipboard
-   - (Optional) Map this command to a hotkey for instant rephrasing
-
-## Starting the Container
-
-To run the container so it continuously waits for audio files:
-
-```bash
-./run_speech.sh
+```shellscript
+cd linux/
+docker build -t braindumper .
 ```
 
-Or manually:
+### Run the Workflow
 
-```bash
-docker run --rm \
-    --gpus all \
-    -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -v /tmp:/tmp \
-    -e DISPLAY=$DISPLAY \
-    --device /dev/snd:/dev/snd \
-    --group-add $(getent group audio | cut -d: -f3) \
-    --workdir /app \
-    braindumper
+```shellscript
+./run_speech.sh <model_name>
+# Example:
+./run_speech.sh gemma:2b
 ```
 
-## Running as a Service (Optional)
+- `<model_name>` is any Ollama-supported model (e.g., `gemma:2b`, `granite:3b`)
+- The script sets the `MODEL_NAME` environment variable for the container
+- No rebuild/restart needed to change models
 
-You can run the container as a background service using systemd:
+### Clipboard Rephrase
 
-1. Create a systemd unit file (e.g., `/etc/systemd/system/braindumper.service`):
-
-```ini
-[Unit]
-Description=BrainClipper Speech-to-Clipboard Container
-After=network.target
-
-[Service]
-ExecStart=/usr/bin/docker run --rm \
-  --gpus all \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  -v /tmp:/tmp \
-  -e DISPLAY=$DISPLAY \
-  --device /dev/snd:/dev/snd \
-  --group-add $(getent group audio | cut -d: -f3) \
-  --workdir /app \
-  braindumper
-Restart=always
-User=$USER
-
-[Install]
-WantedBy=default.target
+```shellscript
+python3 app/refine_clipboard.py
 ```
 
-1. Reload systemd and enable the service:
+- Rephrases current clipboard text using the selected LLM
 
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now braindumper.service
+## Host Requirements
+
+- Docker
+- NVIDIA GPU and drivers (for GPU acceleration)
+- NVIDIA Container Toolkit (for Docker GPU passthrough)
+- X11 (for clipboard access)
+- Audio device (`/dev/snd`)
+- xclip (for clipboard integration)
+
+## NVIDIA GPU Setup & Troubleshooting
+
+To enable GPU acceleration in Docker containers, you must install the NVIDIA Container Toolkit and ensure your drivers are up to date.
+
+### 1. Install NVIDIA Drivers and Toolkit
+
+```shellscript
+sudo apt install nvidia-driver-535
+sudo apt install nvidia-container-toolkit
+sudo systemctl restart docker
 ```
 
-This will keep the container running in the background, ready to process audio files as they appear.
+### 2. Test GPU Access in Docker
+
+```shellscript
+docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi
+```
+
+You should see your GPU listed. If not, check driver installation and Docker configuration.
+
+### 3. Common Issues & Notes
+
+- If you see `nvidia-container-cli: initialization error`, try rebooting or reinstalling the toolkit.
+- Make sure your user is in the `docker` group: `sudo usermod -aG docker $USER`
+- If you get X11 errors, run `xhost +local:docker` on the host before starting the container.
+- For audio device issues, check permissions on `/dev/snd` and add your user to the `audio` group.
+- If you use a custom kernel, ensure the NVIDIA kernel modules are loaded.
+
+## Container Details
+
+- **Base image**: `nvidia/cuda:12.2.0-devel-ubuntu22.04`
+- **Dependencies**: Python 3, Whisper, Ollama, xclip, ffmpeg, ALSA utils, etc.
+- **Entrypoint**: `/app/entrypoint.sh` (starts Ollama server, runs workflow)
+- **Model cache**: Mount your host `.ollama` directory to `/root/.ollama` in the container for persistent models
+
+## Model Cache & Symlinking
+
+- Ollama model cache is persisted by mounting the host `.ollama` directory
+- You can symlink system and user model directories for shared access
+- Example:
+
+```shellscript
+  ln -s /var/lib/ollama/models /root/.ollama/models
+```
+
+## Hotkey Setup
+
+- Map `run_speech.sh` or a host-side Python script to a global shortcut for instant recording/processing
+
+## File Overview
+
+- `app/entrypoint.sh`: Starts Ollama server, runs workflow
+- `app/process_audio.sh`: Handles audio, runs transcription/refinement, manages clipboard
+- `app/transcribe.py`: Transcribes `/input/audio.wav` to `/tmp/transcript.txt`
+- `app/refine.py`: Refines transcript with LLM, copies to clipboard
+- `app/refine_clipboard.py`: Rephrases clipboard text with LLM
+- `linux/Dockerfile`: Installs dependencies, sets up entrypoint
+- `linux/run_speech.sh`: Host script to run container with correct mounts/devices
+
+## Troubleshooting
+
+- **Clipboard not working?** Ensure X11 is available and xclip is installed on host and in container.
+- **Model not found?** Make sure the model name is correct and your `.ollama` directory is mounted.
+- **Audio device errors?** Check `/dev/snd` permissions and container device mapping.
+- **Performance issues?** Ensure GPU drivers are installed and Docker is configured for GPU access.
 
 ## GPU Passthrough Instructions
 
 - Ensure you have the NVIDIA Container Toolkit installed:
 
-  ```bash
+```shellscript
   sudo apt install nvidia-container-toolkit
   sudo systemctl restart docker
-  ```
+```
 
 - Run containers with `--gpus all` (Docker).
 - Verify GPU access inside the container:
 
-  ```bash
+```shellscript
   docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi
-  ```
+```
 
 - For X11 clipboard access, allow local connections:
 
-  ```bash
+```shellscript
   xhost +local:
-  ```
+```
 
 ## Requirements
 
 - Docker with GPU support
 - Audio input device (`/dev/snd` on Linux)
-- X11 clipboard (CopyQ)
+- X11 clipboard (xclip)
 - Python 3.8+
 - NVIDIA GPU and drivers (for GPU acceleration)
+
+> **Note:** Clipboard integration uses xclip (not CopyQ). Make sure xclip is installed on both host and in the container, and X11 is available.
 
 ## Installation with pipx (Recommended)
 
 1. Install pipx:
 
-   ```bash
+```shellscript
    sudo apt install pipx
    pipx ensurepath
-   ```
+```
 
 2. Install CLI tools:
 
-   ```bash
+```shellscript
    pipx install openai-whisper
    pipx install ollama
-   ```
+```
 
 ## Python Environment Setup (Recommended)
 
 1. Create and activate a virtual environment:
 
-   ```bash
+```shellscript
    python3 -m venv ~/.venvs/brainclipper
    source ~/.venvs/brainclipper/bin/activate
-   ```
+```
 
 2. Install required packages:
 
-   ```bash
+```shellscript
    pip install sounddevice soundfile numpy psutil
-   ```
+```
 
 3. Run the recording script:
 
-   ```bash
+```shellscript
    python3 /home/ficus/Documents/Project-Code/whisper-braindumper/record_and_send.py
-   ```
+```
 
 - Map this activation and script run to your hotkey for reliable execution.
 
@@ -199,7 +205,7 @@ BrainClipper is a containerized speech-to-clipboard automation tool for Linux. I
 3. **Start the container** using the Docker run command above (handles GPU, clipboard, and audio device mounts).
 4. **Container processes audio**:
     - `entrypoint.sh` starts the Ollama server, then runs `process_audio.sh`.
-    - `process_audio.sh` transcribes audio with Whisper, refines with LLM, and copies the result to the clipboard using CopyQ.
+    - `process_audio.sh` transcribes audio with Whisper, refines with LLM, and copies the result to the clipboard using xclip.
 5. **Paste the result** anywhere on your host.
 
 ## Key Files
@@ -217,131 +223,6 @@ BrainClipper is a containerized speech-to-clipboard automation tool for Linux. I
 - Map `record_and_send.py` to a global shortcut in KDE/GNOME for instant recording.
 - The script toggles recording: first press starts, second press stops and sends audio to the container.
 
-## Clipboard Rephrase
+## Clipboard Rephrase (LLM)
 
 - Run `python3 app/refine_clipboard.py` to rephrase clipboard text using the LLM.
-
-## Example End-to-End Flow
-
-1. User triggers hotkey or runs `record_and_send.py`.
-2. Host records audio, saves as `/tmp/input.wav`.
-3. Container starts, runs `entrypoint.sh` → `process_audio.sh`.
-4. Audio is transcribed, refined, and copied to clipboard.
-
-## Manual Ollama Model Pull (Container)
-
-If you need to manually pull the Ollama model inside the container:
-
-1. Start the container as usual:
-
-   ```bash
-   ./run_speech.sh
-   # or
-   docker run --rm --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix -v /tmp:/tmp -e DISPLAY=$DISPLAY --device /dev/snd:/dev/snd --group-add $(getent group audio | cut -d: -f3) --workdir /app braindumper
-   ```
-
-2. Enter the running container:
-
-   ```bash
-   docker ps
-   docker exec -it <container_id_or_name> /bin/bash
-   ```
-
-3. Inside the container, pull the model:
-
-   ```bash
-   ollama pull granite3-moe:3b
-   ollama list
-   ollama serve &
-   ```
-
-This ensures the LLM model is available for processing. If the model is already present, the pull will be fast and will not re-download unless needed.
-
-## Ollama Model Persistence & Symlinking
-
-Ollama stores downloaded LLM models in a `.ollama` directory. To avoid re-downloading models every time you start a new container, you should persist this directory and ensure the container always uses the correct cache.
-
-### 1. Find Your Ollama Model Directory
-
-On most systems, Ollama stores models in your home directory:
-
-```bash
-ls ~/.ollama
-```
-
-Sometimes, models may also be found in `/usr/share/ollama/.ollama`. To check all locations:
-
-```bash
-find / -type d -name ".ollama" 2>/dev/null
-```
-
-### 2. Symlink System Directory to User Directory (if needed)
-
-If you find models in `/usr/share/ollama/.ollama` and want to use your user cache (`/home/<user>/.ollama`), copy the contents and create a symlink:
-
-```bash
-sudo cp -r /usr/share/ollama/.ollama/* ~/.ollama/
-sudo rm -rf /usr/share/ollama/.ollama
-sudo ln -s ~/.ollama /usr/share/ollama/.ollama
-sudo chown -R $USER:$USER ~/.ollama
-```
-
-This ensures all models are stored in your user directory and the system path points to it.
-
-### 3. Persist Models in Docker
-
-Mount your `.ollama` directory when running the container:
-
-```bash
-docker run --rm \
-  --gpus all \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  -v /tmp:/tmp \
-  -v ~/.ollama:/root/.ollama \
-  -e DISPLAY=$DISPLAY \
-  --device /dev/snd:/dev/snd \
-  --group-add $(getent group audio | cut -d: -f3) \
-  --workdir /app \
-  braindumper
-```
-
-This ensures models are cached and available for all future runs.
-
----
-
-## Clipboard Integration (X11 Forwarding)
-
-For clipboard operations (using `xclip`), your container needs access to your host’s X11 server:
-
-1. **Allow X11 connections from Docker:**
-
-   ```bash
-   xhost +local:docker
-   ```
-
-2. **Run the container with X11 socket mounted:**
-
-   ```bash
-   -v /tmp/.X11-unix:/tmp/.X11-unix \
-   -e DISPLAY=$DISPLAY
-   ```
-
-3. **SSH Forwarding (if running remotely):**
-
-   - Use `ssh -X` or `ssh -Y` to forward X11 when connecting to your host.
-
----
-
-## Quick Reference: End-to-End Workflow
-
-1. **Record audio** on host (`record_and_send.py` or hotkey).
-2. **Audio saved** as `/tmp/input.wav`.
-3. **Start container** with GPU, audio, X11, and Ollama model mounts.
-4. **Container processes audio**:
-    - `entrypoint.sh` starts Ollama server, runs `process_audio.sh`.
-    - `process_audio.sh` transcribes, refines, and copies result to clipboard using `xclip`.
-5. **Paste result** anywhere on host.
-
----
-
-> **Tip:** Always mount your `.ollama` directory and X11 socket for best performance and clipboard reliability.
