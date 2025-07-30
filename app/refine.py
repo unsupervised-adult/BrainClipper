@@ -20,9 +20,10 @@ prompt = prompt_template.format(transcript=transcript)
 
 client = Client()
 response = client.generate(model=model, prompt=prompt)
-print("LLM response:", response)
 polished_text = response["response"]
-# Remove all occurrences of the prompt from the response
+# Log the full LLM response to a file
+with open("/tmp/llm_response.log", "a") as logf:
+    logf.write(str(response) + "\n")
 polished_text = polished_text.replace(prompt, "").strip()
 proc = subprocess.Popen(['xclip', '-selection', 'clipboard'], stdin=subprocess.PIPE)
 proc.communicate(polished_text.encode())
