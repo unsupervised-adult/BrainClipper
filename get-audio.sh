@@ -17,8 +17,8 @@ while true; do
         # Ignore all other keys (including clipboard paste)
     done
 
-    # Start recording with visualizer and show red @REC
-    echo -e "\033[1;31m@REC\033[0m Recording... Press [ENTER] or [SPACE] to stop & save, [r] to redo, [q/x] to quit."
+    # Start recording with visualizer and show red "Recording..."
+    echo -e "\033[1;31mRecording...\033[0m Press [ENTER] or [SPACE] to stop & save, [r] to redo, [q/x] to quit."
     python3 "$SCRIPT_DIR/app/waveform.py" &
     PY_PID=$!
 
@@ -33,8 +33,8 @@ while true; do
         elif [[ "$STOP_INPUT" == "r" ]]; then
             kill $PY_PID 2>/dev/null
             wait $PY_PID 2>/dev/null
-            echo -e "\033[1;31m@REC\033[0m Redoing recording..."
-            echo -e "\033[1;31m@REC\033[0m Recording... Press [ENTER] or [SPACE] to stop & save, [r] to redo, [q/x] to quit."
+            echo -e "\033[1;31mRedoing recording...\033[0m"
+            echo -e "\033[1;31mRecording...\033[0m Press [ENTER] or [SPACE] to stop & save, [r] to redo, [q/x] to quit."
             python3 "$SCRIPT_DIR/app/waveform.py" &
             PY_PID=$!
             continue
