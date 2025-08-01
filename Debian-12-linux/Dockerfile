@@ -21,13 +21,15 @@ RUN apt-get update && apt-get install -y \
     libxtst6 \
     xclip \
     libxss1 \
+    espeak \
+    espeak-data \
     && rm -rf /var/lib/apt/lists/* \
     && which arecord || (echo "ERROR: arecord not found" && exit 1) \
     && arecord --version \
     && echo "ALSA utils installed successfully"
 
 # Install Python dependencies (increase timeout for large packages)
-RUN pip3 install --default-timeout=300 --no-cache-dir openai-whisper torch torchaudio ollama sounddevice numpy soundfile keyboard
+RUN pip3 install --default-timeout=300 --no-cache-dir openai-whisper torch torchaudio ollama sounddevice numpy soundfile keyboard pyttsx3
 # Preload Whisper 'small' model to cache weights in the image
 RUN python3 -c "import whisper; whisper.load_model('small')"
 RUN curl -fsSL https://ollama.com/install.sh | sh
@@ -37,6 +39,7 @@ COPY app/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 COPY app/transcribe.py /app/transcribe.py
 COPY app/refine.py /app/refine.py
+COPY app/speak.py /app/speak.py
 COPY app/process_audio.sh /app/process_audio.sh
 RUN chmod +x /app/process_audio.sh
 RUN ln -s /app/process_audio.sh /usr/local/sbin/process_audio.sh \

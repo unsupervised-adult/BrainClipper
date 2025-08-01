@@ -9,6 +9,9 @@ else
     DEBUG_MODE=0
 fi
 
+# Get mode from environment variable (default: transcribe)
+MODE="${MODE:-transcribe}"
+
 # Example usage: ./process_audio.sh [--debug] <audio_file>
 AUDIO_FILE="/tmp/input.wav"
 
@@ -16,6 +19,7 @@ while true; do
     if [ -f "$AUDIO_FILE" ]; then
         if [[ $DEBUG_MODE -eq 1 ]]; then
             echo "[DEBUG] Using audio file: $AUDIO_FILE"
+            echo "[DEBUG] Mode: $MODE"
         fi
 
         # Run transcription
@@ -29,25 +33,37 @@ while true; do
             cat /tmp/transcript.txt
         fi
 
-        # Run refinement
-        if [[ $DEBUG_MODE -eq 1 ]]; then
-            echo "[DEBUG] Running refine.py"
-        fi
-        python3 /app/refine.py /tmp/transcript.txt > /tmp/refined.txt
+        if [[ "$MODE" == "speak" ]]; then
+            # Speech mode: Generate TTS reply and visualize it
+            if [[ $DEBUG_MODE -eq 1 ]]; then
+                echo "[DEBUG] Running speak.py for TTS generation"
+            fi
+            python3 /app/speak.py
 
-        if [[ $DEBUG_MODE -eq 1 ]]; then
-            echo "[DEBUG] Refined output saved to /tmp/refined.txt"
-            cat /tmp/refined.txt
-        fi
+            if [[ $DEBUG_MODE -eq 1 ]]; then
+                echo "[DEBUG] Playing and visualizing LLM speech output"
+            fi
+            
+            # Play the generated speech with visualization
+            if [ -f "/tmp/llm_reply.wav" ]; then
+                echo "Playing LLM response..."
+                python3 /app/waveform.py --input /tmp/llm_reply.wav &
+                WAVE_PID=$!
+                aplay /tmp/llm_reply.wav
+                kill $WAVE_PID 2>/dev/null
+                wait $WAVE_PID 2>/dev/null
+            fi
+        else
+            # Transcribe mode: Run refinement and copy to clipboard
+            if [[ $DEBUG_MODE -eq 1 ]]; then
+                echo "[DEBUG] Running refine.py"
+            fi
+            python3 /app/refine.py
 
-        # Copy to clipboard
-        if [[ $DEBUG_MODE -eq 1 ]]; then
-            echo "[DEBUG] Copying to clipboard"
+            if [[ $DEBUG_MODE -eq 1 ]]; then
+                echo "[DEBUG] Done. Output copied to clipboard."
+            fi
         fi
-        cat /tmp/refined.txt | xclip -selection clipboard
-
-        if [[ $DEBUG_MODE -eq 1 ]]; then
-            echo "[DEBUG] Done. Output copied to clipboard."
         fi
 
         # Optionally, remove or archive the processed audio file
