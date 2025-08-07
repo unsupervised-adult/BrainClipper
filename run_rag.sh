@@ -9,6 +9,7 @@ docker build -f "$DOCKERFILE_PATH" -t braindumper-rag .
 # Run the container interactively with GPU, X11, clipboard, and Ollama model cache
 # Use host networking and set OLLAMA_HOST to host's Ollama server
 
+# Mount the logs folder as /log in the container
 echo "Running RAG container..."
 docker run -it --rm \
     --gpus all \
@@ -16,7 +17,7 @@ docker run -it --rm \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /tmp:/tmp \
     -v ~/.ollama:/root/.ollama \
-    -v $(pwd)/log:/log \
+    -v $(pwd)/logs:/log \
     -e DISPLAY=$DISPLAY \
     -e MODEL_NAME="${MODEL_NAME:-granite3-moe:3b}" \
     -e OLLAMA_HOST="localhost:11434" \
