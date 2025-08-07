@@ -64,7 +64,6 @@ while true; do
                 echo "[DEBUG] Done. Output copied to clipboard."
             fi
         fi
-        fi
 
         # Optionally, remove or archive the processed audio file
         rm -f "$AUDIO_FILE"
